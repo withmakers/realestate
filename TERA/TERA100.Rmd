@@ -3,7 +3,10 @@ title: "[withmakers] TERA펀딩 데이터 분석"
 output: flexdashboard::flex_dashboard
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE}
+# save with encoding CP949
+
+# library
 library(flexdashboard)
 library(data.table)
 library(knitr)
@@ -35,37 +38,38 @@ data = fread("c:/Users/user/Documents/TERA/output/data.csv")
 Column {data-width=200}
 -------------------------------------
    
-### 제2460차 용인 보정동 죽전힐데스하임아파트 담보상품 
+### P2P부동산투자 예측 결과
 
 ```{r}
 tmp = data.frame(
-  수익률 = c("9.5%"),
-  기간 = c("12개월"),
-  등급 = c("A3"),
-  모집금액 = c("3억원")
+  투자상품 = c("제2460차 용인 보정동 하임아파트 담보상품","제2461차 여주시 현암동 단독주택 신축사업"),
+  수익률 = c("9.5%","14%"),
+  기간 = c("12개월","4개월"),
+  등급 = c("A3","C1"),
+  금액 = c("3억원","1억원"),
+  연체확률 = c("0.01%","0.01%")
 )
 tmp %>% kable("html") %>% kable_styling(font_size = 15)
-data.table(연체확률="90%") %>% kable("html") %>% kable_styling(font_size = 15)
 ```   
  
 ### 투자기간
 
 ```{r}
-ply = data %>% count(투자기간,TARGET) %>% plot_ly(x = ~투자기간, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter")
+ply = data %>% count(투자기간,TARGET) %>% plot_ly(x = ~투자기간, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 수익률
 
 ```{r}
-ply = data %>% count(수익률,TARGET) %>% plot_ly(x = ~수익률, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter")
+ply = data %>% count(수익률,TARGET) %>% plot_ly(x = ~수익률, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 모집금액
 
 ```{r}
-ply = data %>% count(모집금액,TARGET) %>% plot_ly(x = ~모집금액, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter")
+ply = data %>% count(모집금액,TARGET) %>% plot_ly(x = ~모집금액, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
@@ -76,28 +80,28 @@ Column {data-width=200}
 ### 등급
 
 ```{r}
-ply = data %>% count(등급,TARGET) %>% plot_ly(x = ~등급, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(등급,TARGET) %>% plot_ly(x = ~등급, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 건물
     
 ```{r}
-ply = data %>% count(건물,TARGET) %>% plot_ly(x = ~건물, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(건물,TARGET) %>% plot_ly(x = ~건물, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 투자유형
     
 ```{r}
-ply = data %>% count(투자유형,TARGET) %>% plot_ly(x = ~투자유형, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(투자유형,TARGET) %>% plot_ly(x = ~투자유형, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 투자인원
     
 ```{r}
-ply = data %>% count(투자인원,TARGET) %>% plot_ly(x = ~투자인원, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter")
+ply = data %>% count(투자인원,TARGET) %>% plot_ly(x = ~투자인원, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="scatter") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
@@ -108,28 +112,28 @@ Column {data-width=200}
 
 ```{r}
 tmp = data[TARGET=="연체",]
-ply = tmp %>% count(지역,TARGET) %>% plot_ly(x = ~지역, y = ~n, type="bar",marker = list(color ="rgb(204,204,204)"))
+ply = tmp %>% count(지역,TARGET) %>% plot_ly(x = ~지역, y = ~n, type="bar",marker = list(color ="rgb(204,204,204)")) %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```   
  
 ### 도시유형
     
 ```{r}
-ply = data %>% count(도시유형,TARGET) %>% plot_ly(x = ~도시유형, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(도시유형,TARGET) %>% plot_ly(x = ~도시유형, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 역세권
     
 ```{r}
-ply = data %>% count(역세권,TARGET) %>% plot_ly(x = ~역세권, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(역세권,TARGET) %>% plot_ly(x = ~역세권, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
 ### 주택
     
 ```{r}
-ply = data %>% count(주택,TARGET) %>% plot_ly(x = ~주택, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar")
+ply = data %>% count(주택,TARGET) %>% plot_ly(x = ~주택, y = ~n, color= ~as.factor(TARGET), colors=RCOLORS, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
 plotly::config(ply, displayModeBar = F)
 ```
 
@@ -152,14 +156,14 @@ leaflet() %>%
   setView(lng=seoul_lonlat[1],lat=seoul_lonlat[2],zoom=6) %>%
   
   # Add two tiles
-  addProviderTiles("Esri.WorldImagery", group="background 1") %>%
-  addTiles(options = providerTileOptions(noWrap = TRUE), group="background 2") %>%
+  addProviderTiles("Esri.WorldImagery", group="인공위성") %>%
+  addTiles(options = providerTileOptions(noWrap = TRUE), group="일반지도") %>%
   
   # Add 2 marker groups
   addCircleMarkers(data=data_blue, lng=~lon , lat=~lat, radius=~N, color="black",  fillColor="dodgerblue", stroke = TRUE, fillOpacity = 0.8, group="상환완료") %>%
   addCircleMarkers(data=data_red, lng=~lon , lat=~lat, radius=~N, color="black",  fillColor="red", stroke = TRUE, fillOpacity = 0.8, group="연체") %>%
   
   # Add the control widget
-  addLayersControl(overlayGroups = c("연체","상환완료") , baseGroups = c("background 1","background 2"), options = layersControlOptions(collapsed = FALSE))
+  addLayersControl(overlayGroups = c("연체","상환완료") , baseGroups = c("인공위성","일반지도"), options = layersControlOptions(collapsed = FALSE))
 ```   
  
