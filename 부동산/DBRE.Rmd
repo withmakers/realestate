@@ -1,0 +1,283 @@
+---
+title: "[withmakers] 서울 부동산"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+---
+
+```{r setup, include=TRUE}
+# library
+library(flexdashboard)
+library(data.table)
+library(knitr)
+library(kableExtra)
+library(plotly)
+library(dplyr)
+library(ggmap)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(Kormaps)
+library(tmap)
+library(leaflet)
+library(leaflet.extras)
+library(RColorBrewer)
+
+# RCOLORS
+RCOLORS = brewer.pal(n = 8, name = 'Pastel2')
+
+# set gmap api
+register_google(key="AIzaSyCXh01QH5qS9MjT1thxp63fbVBtNlsebgc")
+
+# check lat and long
+seoul_lonlat = geocode('서울', source = 'google')
+
+# path 
+PATH_INPUT = "c:/Users/user/Documents/부동산/input"
+
+# read data
+data = fread(file.path(PATH_INPUT,"DT_SEOUL.csv"))
+
+# features
+data[,year:=substr(계약년월,1,4)]
+data[,month:=substr(계약년월,5,6)]
+data[,지역_구:=sapply(시군구,function(x) paste0(unlist(strsplit(x,split=" "))[1:2],collapse = " "))]
+data[,지역_동:=sapply(시군구,function(x) unlist(strsplit(x,split=" "))[3])]
+data[,시군구:=gsub("서울특별시 ","",시군구)]
+data[,지역_구:=gsub("서울특별시 ","",지역_구)]
+data[,전용면적:=signif(`전용면적(㎡)`,2)]
+data[,거래금액_만원:=as.numeric(gsub(",","",`거래금액(만원)`))]
+data[,거래금액_만원:=signif(거래금액_만원,3)]
+```
+
+계약년월 & 건축년도
+=====================================  
+
+Column 1
+-------------------------------------
+
+### 계약년도별(year) 부동산 거래빈도
+    
+```{r}
+ply = data %>% count(year) %>% plot_ly(x = ~year, y = ~n, type='bar') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 지역(동)별 평균 건축년도(젊은 지역 TOP50)
+    
+```{r}
+# 지역_동 평균 건축년도 (head)
+tmp = unique(data[,list(지역_동,단지명,건축년도)])
+tmp = tmp[,list(건물_평균나이=round(2019-mean(건축년도))),by=list(지역_동)]
+tmp = head(tmp[order(건물_평균나이,decreasing = F),],50)
+ply = tmp %>% plot_ly(x = ~지역_동, y = ~건물_평균나이, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column 2
+-------------------------------------
+
+### 계약월별(month) 부동산 거래빈도
+    
+```{r}
+ply = data %>% count(month) %>% plot_ly(x = ~month, y = ~n, type='bar') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 지역(동)별 평균 건축년도(오래된 지역 TOP50)
+    
+```{r}
+# 지역_동 평균 건축년도 (tail)
+tmp = unique(data[,list(지역_동,단지명,건축년도)])
+tmp = tmp[,list(건물_평균나이=round(2019-mean(건축년도))),by=list(지역_동)]
+tmp = tail(tmp[order(건물_평균나이,decreasing = F),],50)
+ply = tmp %>% plot_ly(x = ~지역_동, y = ~건물_평균나이, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column 3
+-------------------------------------
+
+### 계약년월별(year-month) 부동산 거래빈도
+    
+```{r}
+ply = data %>% count(year,month) %>% plot_ly(x = ~month, y = ~n, color= ~as.factor(year), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 지역(구) 평균 건축년도
+    
+```{r}
+# 지역_구 평균 건축년도 
+tmp = unique(data[,list(지역_구,단지명,건축년도)])
+tmp = tmp[,list(건물_평균나이=round(2019-mean(건축년도))),by=list(지역_구)]
+tmp = tmp[order(건물_평균나이,decreasing = F),]
+ply = tmp %>% plot_ly(x = ~지역_구, y = ~건물_평균나이, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+지역
+===================================== 
+
+Column 1
+-------------------------------------
+
+### 시군구별 부동산 거래빈도(거래빈도가 많은 지역 TOP50)
+    
+```{r}
+tmp1 = data %>% count(시군구) %>% arrange(desc(n)) %>% head(50)
+ply = tmp1 %>% plot_ly(x = ~시군구, y = ~n, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 시군구별 부동산 거래빈도(거래빈도가 적은 지역 TOP50)
+    
+```{r}
+tmp2 = data %>% count(시군구) %>% arrange(desc(n)) %>% tail(50)
+ply = tmp2 %>% plot_ly(x = ~시군구, y = ~n, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 지역(구)별 부도산 거래빈도
+    
+```{r}
+tmp3 = data %>% count(지역_구) %>% arrange(desc(n)) 
+ply = tmp3 %>% plot_ly(x = ~지역_구, y = ~n, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column 2
+-------------------------------------
+
+### 시군구별 거래빈도가 많은 지역 거래빈도(연도별 트랜드)
+    
+```{r}
+tmp = data %>% count(시군구,year) %>% filter(시군구 %in% tmp1$시군구)
+ply = tmp %>% plot_ly(x = ~시군구, y = ~n, color= ~as.factor(year), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 시군구별 거래빈도가 적은 지역 거래빈도(연도별 트랜드)
+    
+```{r}
+tmp = data %>% count(시군구,year) %>% filter(시군구 %in% tmp2$시군구)
+ply = tmp %>% plot_ly(x = ~시군구, y = ~n, color= ~as.factor(year), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 지역(구)별 부동산 거래빈도(연도별 트랜드)
+    
+```{r}
+tmp = data %>% count(지역_구,year) %>% filter(지역_구 %in% tmp3$지역_구)
+ply = tmp %>% plot_ly(x = ~지역_구, y = ~n, color= ~as.factor(year), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+전용면적
+=====================================
+
+Column 
+-------------------------------------
+
+### 전용면적(60m2) 거래빈도(연도별 트랜드) 
+    
+```{r}
+tmp = data %>% count(전용면적,year,month) %>% filter(전용면적 %in% 60)
+ply = tmp %>% plot_ly(x = ~month, y = ~n, color= ~as.factor(paste0(전용면적,"㎡_",year)), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 전용면적별 거래빈도
+    
+```{r}
+ply = data %>% count(전용면적) %>% plot_ly(x = ~전용면적, y = ~n, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column 
+-------------------------------------
+
+### 전용면적(85m2) 거래빈도(연도별 트랜드) 
+    
+```{r}
+tmp = data %>% count(전용면적,year,month) %>% filter(전용면적 %in% 85)
+ply = tmp %>% plot_ly(x = ~month, y = ~n, color= ~as.factor(paste0(전용면적,"㎡_",year)), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 연도별 전용면적별 거래빈도 
+    
+```{r}
+ply = data %>% count(전용면적,year) %>% plot_ly(x = ~전용면적, y = ~n, color= ~as.factor(year), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column 
+-------------------------------------
+
+### 전용면적(110m2) 거래빈도(연도별 트랜드) 
+    
+```{r}
+tmp = data %>% count(전용면적,year,month) %>% filter(전용면적 %in% 110)
+ply = tmp %>% plot_ly(x = ~month, y = ~n, color= ~as.factor(paste0(전용면적,"㎡_",year)), type='scatter',mode = 'lines+markers') %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 층별 거래빈도
+    
+```{r}
+# 층
+data[,층:=as.numeric(층)]
+ply = data %>% count(층) %>% plot_ly(x = ~층, y = ~n, type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+하왕십리동
+=====================================
+
+Column {data-width=300}
+-------------------------------------
+
+### 거래금액(만원) 거래빈도
+    
+```{r}
+ply = data %>% count(거래금액_만원) %>% plot_ly(x = ~거래금액_만원, y = ~n, mode="markers", type="scatter") %>% layout(xaxis=list(fixedrange=TRUE,title="거래금액(200k는 20억)")) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column {data-width=300}
+-------------------------------------
+
+### 단지별 전용면적별 거래빈도
+    
+```{r}
+tmp = data[지역_동 %in% c("하왕십리동") & 전용면적 %in% c(60,85,110),]
+ply = tmp %>% count(단지명,전용면적) %>% plot_ly(x = ~전용면적, y = ~n, color= ~as.factor(단지명),type="bar") %>% layout(xaxis=list(fixedrange=TRUE)) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+### 단지별 전용면적별 거래금액(만원)
+    
+```{r}
+tmp = data[지역_동 %in% c("하왕십리동") & 전용면적 %in% c(60,85,110),]
+ply = tmp %>% plot_ly(x = ~as.Date(paste(year,month,"01",sep="-")), y = ~거래금액_만원, color= ~as.factor(paste0(전용면적,"㎡_",단지명)),type='scatter',mode = 'markers') %>% layout(xaxis=list(fixedrange=TRUE,title="거래년월")) %>% layout(yaxis=list(fixedrange=TRUE))
+plotly::config(ply, displayModeBar = F)
+```
+
+Column {data-width=400}
+-------------------------------------
+
+### 서울특별시 지도
+    
+```{r}
+# map
+div = unique(data[,list(시군구,lat,lon)])
+leaflet() %>% 
+  setView(lng=seoul_lonlat[1],lat=seoul_lonlat[2], zoom=10) %>%
+  addProviderTiles("Esri.WorldImagery", group="인공위성") %>%
+  addTiles(options = providerTileOptions(noWrap = TRUE), group="일반지도") %>%
+  addMarkers(data=div, lng=~lon, lat=~lat, popup = ~시군구, group = 'marker', label = ~시군구, icon = ~ icons(
+    iconUrl = 'https://raw.githubusercontent.com/withmakers/withmakers.github.io/master/_img/house.png',iconWidth = 20, iconHeight = 20)) %>%
+  addSearchFeatures('marker') %>%
+  addLayersControl(baseGroups = c("인공위성","일반지도"), options = layersControlOptions(collapsed = FALSE))
+```
